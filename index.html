@@ -401,13 +401,13 @@
   <div class="view" id="authView" style="display:none">
     <div class="auth-wrapper">
       <div class="auth-title">📔 日记</div>
-      <div class="auth-form" id="authForm">
+      <form class="auth-form" id="authForm"
         <input class="auth-input" id="authEmail" type="email" placeholder="邮箱" autocomplete="email">
         <input class="auth-input" id="authPassword" type="password" placeholder="密码（至少6位）" autocomplete="current-password">
         <div class="auth-error" id="authError"></div>
-        <button class="auth-btn" id="authSubmitBtn">登录</button>
+        <button class="auth-btn" id="authSubmitBtn" type="submit">登录</button>
         <button class="auth-btn secondary" id="authToggleBtn">还没有账号？点击注册</button>
-      </div>
+      </form>
       <div class="auth-hint">数据云端同步，多设备可用</div>
     </div>
   </div>
