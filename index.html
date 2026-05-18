@@ -38,7 +38,6 @@
     overflow: hidden;
   }
 
-  /* ---- view switching ---- */
   .view {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -49,286 +48,114 @@
   .view.hidden-left  { transform: translateX(-60px); opacity: 0; pointer-events: none; }
   .view.hidden-right { transform: translateX(60px);  opacity: 0; pointer-events: none; }
 
-  /* ======== Auth View ======== */
-  .auth-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-    gap: 24px;
-  }
-  .auth-title {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -.5px;
-  }
-  .auth-form {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .auth-input {
-    width: 100%;
-    padding: 14px 18px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    font-size: 16px;
-    font-family: inherit;
-    background: var(--card);
-    color: var(--text);
-    outline: none;
-    transition: border-color .2s;
-  }
-  .auth-input:focus { border-color: var(--accent); }
-  .auth-input::placeholder { color: #ccc; }
-
-  .auth-btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    background: var(--accent);
-    color: #fff;
-    transition: opacity .15s;
-  }
-  .auth-btn:active { opacity: .8; }
-  .auth-btn.secondary {
-    background: transparent;
-    color: var(--accent);
-    font-weight: 500;
-  }
-  .auth-error {
-    font-size: 14px;
-    color: #ff4d4f;
-    text-align: center;
-    min-height: 20px;
-  }
-  .auth-hint {
-    font-size: 12px;
-    color: #ccc;
-    text-align: center;
-  }
-
-  /* ---- logout button ---- */
-  .logout-btn {
-    position: fixed;
-    top: 16px;
-    right: 20px;
-    z-index: 100;
-    padding: 6px 16px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    border-radius: 14px;
-    font-size: 13px;
-    cursor: pointer;
-    font-family: inherit;
-    color: var(--text-secondary);
-    box-shadow: var(--shadow);
-    transition: background .15s;
-  }
-  .logout-btn:active { background: #f0f0f0; }
-
-  /* ---- calendar header ---- */
   .cal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    padding: 8px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; padding: 8px 0;
   }
   .month-label {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -.3px;
-    cursor: pointer;
-    padding: 4px 12px;
-    border-radius: 10px;
+    font-size: 22px; font-weight: 700; letter-spacing: -.3px;
+    cursor: pointer; padding: 4px 12px; border-radius: 10px;
     transition: background .15s;
   }
   .month-label:active { background: var(--accent-light); }
   .nav-btn {
     width: 40px; height: 40px;
     border: none; background: var(--card);
-    border-radius: 50%;
-    font-size: 18px; cursor: pointer;
+    border-radius: 50%; font-size: 18px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text);
-    box-shadow: var(--shadow);
+    color: var(--text); box-shadow: var(--shadow);
     transition: background .15s;
   }
   .nav-btn:active { background: #f0f0f0; }
 
-  /* ---- weekday row ---- */
   .weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
-    font-weight: 500;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 13px;
+    color: var(--text-secondary); margin-bottom: 10px; font-weight: 500;
   }
-
-  /* ---- day grid ---- */
-  .day-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-  }
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .day-cell {
     aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 14px;
-    font-size: 15px;
-    cursor: pointer;
-    position: relative;
-    transition: background .15s;
-    font-weight: 450;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 14px; font-size: 15px; cursor: pointer;
+    position: relative; transition: background .15s; font-weight: 450;
   }
   .day-cell:active { background: var(--accent-light); }
   .day-cell.other-month { color: #d0d0d0; pointer-events: none; }
   .day-cell.today { font-weight: 700; color: var(--accent); }
   .day-cell.today::after {
-    content: '';
-    position: absolute; bottom: 6px;
-    width: 5px; height: 5px;
-    border-radius: 50%; background: var(--accent);
+    content: ''; position: absolute; bottom: 6px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
   }
   .day-cell.has-entry::before {
-    content: '';
-    position: absolute; top: 5px;
-    width: 5px; height: 5px;
-    border-radius: 50%; background: var(--dot);
+    content: ''; position: absolute; top: 5px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--dot);
   }
 
-  /* ---- diary view ---- */
   .diary-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
-    padding: 8px 0;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px; padding: 8px 0;
   }
   .diary-date {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -.3px;
-    cursor: pointer;
-    padding: 4px 0;
-    flex: 1;
-    transition: opacity .15s;
+    font-size: 20px; font-weight: 700; letter-spacing: -.3px;
+    cursor: pointer; padding: 4px 0; flex: 1; transition: opacity .15s;
   }
   .diary-date:active { opacity: .5; }
 
   .diary-editor { display: flex; flex-direction: column; gap: 16px; }
   .diary-title-input {
-    width: 100%;
-    border: none;
-    font-size: 24px;
-    font-weight: 700;
-    font-family: inherit;
-    background: transparent;
-    color: var(--text);
-    outline: none;
+    width: 100%; border: none;
+    font-size: 24px; font-weight: 700; font-family: inherit;
+    background: transparent; color: var(--text); outline: none;
     letter-spacing: -.3px;
   }
   .diary-title-input::placeholder { color: #ccc; }
   .diary-content-input {
-    width: 100%;
-    flex: 1;
-    min-height: 300px;
-    border: none;
-    font-size: 16px;
-    font-family: inherit;
-    background: transparent;
-    color: var(--text);
-    outline: none;
-    resize: none;
-    line-height: 1.8;
+    width: 100%; flex: 1; min-height: 300px;
+    border: none; font-size: 16px; font-family: inherit;
+    background: transparent; color: var(--text); outline: none;
+    resize: none; line-height: 1.8;
   }
   .diary-content-input::placeholder { color: #d5d5d5; }
 
   .save-hint {
-    font-size: 12px;
-    color: #ccc;
-    text-align: right;
-    margin-top: 8px;
-    transition: color .3s;
+    font-size: 12px; color: #ccc; text-align: right;
+    margin-top: 8px; transition: color .3s;
   }
   .save-hint.saved { color: var(--accent); }
 
   .today-btn {
-    display: block;
-    margin: 20px auto 0;
-    padding: 10px 28px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
-    font-family: inherit;
-    color: var(--text);
-    box-shadow: var(--shadow);
+    display: block; margin: 20px auto 0; padding: 10px 28px;
+    border: 1px solid var(--border); background: var(--card);
+    border-radius: 20px; font-size: 14px; cursor: pointer;
+    font-family: inherit; color: var(--text); box-shadow: var(--shadow);
     transition: background .15s;
   }
   .today-btn:active { background: #f0f0f0; }
 
   .entry-count {
-    text-align: center;
-    font-size: 12px;
-    color: #ccc;
-    margin-top: 12px;
+    text-align: center; font-size: 12px; color: #ccc; margin-top: 12px;
   }
 
-  /* ======== Picker View ======== */
   .picker-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
-    padding: 8px 0;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px; padding: 8px 0;
   }
   .picker-year-label {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -.3px;
-    flex: 1; text-align: center;
-    cursor: pointer;
-    padding: 4px 12px;
-    border-radius: 10px;
-    transition: background .15s;
+    font-size: 20px; font-weight: 700; letter-spacing: -.3px;
+    flex: 1; text-align: center; cursor: pointer;
+    padding: 4px 12px; border-radius: 10px; transition: background .15s;
   }
   .picker-year-label:active { background: var(--accent-light); }
 
-  .month-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px; padding: 0 4px;
-  }
+  .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 4px; }
   .month-card {
-    aspect-ratio: 1.4;
-    background: var(--card);
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 15px; font-weight: 500;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: all .15s;
-    color: var(--text);
-    border: 2px solid transparent;
+    aspect-ratio: 1.4; background: var(--card); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px; font-size: 15px; font-weight: 500;
+    cursor: pointer; box-shadow: var(--shadow); transition: all .15s;
+    color: var(--text); border: 2px solid transparent;
   }
   .month-card:active { background: var(--accent-soft); transform: scale(.97); }
   .month-card.current { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; color: var(--accent); }
@@ -336,46 +163,24 @@
   .month-card.has-entries .month-dot { opacity: 1; }
   .month-card .month-count { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
 
-  /* ======== Year Picker View ======== */
   .year-picker-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
-    padding: 8px 0;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px; padding: 8px 0;
   }
   .year-picker-decade-label {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -.3px;
-    flex: 1; text-align: center;
-    cursor: pointer;
-    padding: 4px 12px;
-    border-radius: 10px;
-    transition: background .15s;
+    font-size: 20px; font-weight: 700; letter-spacing: -.3px;
+    flex: 1; text-align: center; cursor: pointer;
+    padding: 4px 12px; border-radius: 10px; transition: background .15s;
   }
   .year-picker-decade-label:active { background: var(--accent-light); }
 
-  .year-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px; padding: 0 4px;
-  }
+  .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 0 4px; }
   .year-card {
-    aspect-ratio: 1;
-    background: var(--card);
-    border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    font-size: 16px; font-weight: 500;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: all .15s;
-    color: var(--text);
-    border: 2px solid transparent;
+    aspect-ratio: 1; background: var(--card); border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 4px; font-size: 16px; font-weight: 500;
+    cursor: pointer; box-shadow: var(--shadow); transition: all .15s;
+    color: var(--text); border: 2px solid transparent;
   }
   .year-card:active { background: var(--accent-soft); transform: scale(.97); }
   .year-card.current { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; color: var(--accent); }
@@ -383,7 +188,6 @@
   .year-card.has-entries .year-dot { opacity: 1; }
   .year-card .year-count { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
 
-  /* ---- loading ---- */
   .loading {
     display: flex; align-items: center; justify-content: center;
     min-height: 100vh; font-size: 16px; color: #ccc;
@@ -394,27 +198,9 @@
 
 <div class="container">
 
-  <!-- ======== Loading ======== -->
   <div class="loading" id="loadingView">加载中...</div>
 
-  <!-- ======== Auth View ======== -->
-  <div class="view" id="authView" style="display:none">
-    <div class="auth-wrapper">
-      <div class="auth-title">📔 日记</div>
-      <div class="auth-form" id="authForm">
-        <input class="auth-input" id="authEmail" type="email" placeholder="邮箱" autocomplete="email">
-        <input class="auth-input" id="authPassword" type="password" placeholder="密码（至少6位）" autocomplete="current-password">
-        <div class="auth-error" id="authError"></div>
-        <button class="auth-btn" id="authSubmitBtn">登录</button>
-        <button class="auth-btn secondary" id="authToggleBtn">还没有账号？点击注册</button>
-      </div>
-      <div class="auth-hint">数据云端同步，多设备可用</div>
-    </div>
-  </div>
-
-  <!-- ======== Calendar View ======== -->
   <div class="view hidden-right" id="calendarView">
-    <button class="logout-btn" id="logoutBtn1">退出</button>
     <div class="cal-header">
       <button class="nav-btn" id="prevMonth">&lt;</button>
       <span class="month-label" id="monthLabel"></span>
@@ -428,7 +214,6 @@
     <div class="entry-count" id="entryCount"></div>
   </div>
 
-  <!-- ======== Month Picker ======== -->
   <div class="view hidden-right" id="pickerView">
     <div class="picker-header">
       <button class="nav-btn" id="pickerPrevYear">&lt;</button>
@@ -438,7 +223,6 @@
     <div class="month-grid" id="monthGrid"></div>
   </div>
 
-  <!-- ======== Year Picker ======== -->
   <div class="view hidden-right" id="yearPickerView">
     <div class="year-picker-header">
       <button class="nav-btn" id="prevDecadeBtn">&lt;</button>
@@ -448,9 +232,7 @@
     <div class="year-grid" id="yearGrid"></div>
   </div>
 
-  <!-- ======== Diary View ======== -->
-  <div class="view hidden-right" id="diaryView">
-    <button class="logout-btn" id="logoutBtn2">退出</button>
+  <div class="view" id="diaryView">
     <div class="diary-header">
       <span class="diary-date" id="diaryDateLabel"></span>
     </div>
@@ -466,28 +248,31 @@
 <script>
   (function() {
 
-    // ═══════════════════════════════════════
-    // CONFIG — 填入你的 Supabase 信息
-    // ═══════════════════════════════════════
     const SUPABASE_URL = 'https://prijzbrbpacddwojjjqj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaWp6YnJicGFjZGR3b2pqanFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTQ2MzIsImV4cCI6MjA5NDY5MDYzMn0.LioKv6pJJ6dRLMm7IHw3kUSZSIsp9JC1Md1-vNW5HgQ';
 
-    // ---- supabase client ----
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ---- device ID ----
+    function getDeviceId() {
+      let id = localStorage.getItem('diary_device_id');
+      if (!id) {
+        id = 'd_' + crypto.randomUUID();
+        localStorage.setItem('diary_device_id', id);
+      }
+      return id;
+    }
+    const deviceId = getDeviceId();
+
     // ---- state ----
-    let currentUser = null;
-    let isLoginMode = true;
     let currentYear, currentMonth;
     let pickerYear, decadeStart;
     let selectedDate = null;
     let saveTimer = null;
-    let entriesCache = {};      // dateKey → {title, content}
-    let cacheLoaded = false;
+    let entriesCache = {};
 
     // ---- DOM ----
     const loadingView     = document.getElementById('loadingView');
-    const authView        = document.getElementById('authView');
     const calendarView    = document.getElementById('calendarView');
     const pickerView      = document.getElementById('pickerView');
     const yearPickerView  = document.getElementById('yearPickerView');
@@ -503,103 +288,39 @@
     const monthGrid       = document.getElementById('monthGrid');
     const yearGrid        = document.getElementById('yearGrid');
     const decadeLabel     = document.getElementById('decadeLabel');
-    const authEmail       = document.getElementById('authEmail');
-    const authPassword    = document.getElementById('authPassword');
-    const authError       = document.getElementById('authError');
-    const authSubmitBtn   = document.getElementById('authSubmitBtn');
-    const authToggleBtn   = document.getElementById('authToggleBtn');
-    const authForm        = document.getElementById('authForm');
 
     const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-    // ---- auth ----
-    function updateAuthUI() {
-      isLoginMode = !isLoginMode;
-      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
-      authToggleBtn.textContent = isLoginMode ? '还没有账号？点击注册' : '已有账号？去登录';
-      authError.textContent = '';
-    }
-
-    authToggleBtn.addEventListener('click', updateAuthUI);
-
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = authEmail.value.trim();
-      const password = authPassword.value;
-      if (!email || !password) return;
-
-      authError.textContent = '';
-      authSubmitBtn.textContent = '...';
-      authSubmitBtn.disabled = true;
-
-      let result;
-      if (isLoginMode) {
-        result = await supabase.auth.signInWithPassword({ email, password });
-      } else {
-        result = await supabase.auth.signUp({ email, password });
-      }
-
-      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
-      authSubmitBtn.disabled = false;
-
-      if (result.error) {
-        authError.textContent = result.error.message;
-        return;
-      }
-
-      if (!isLoginMode) {
-        authError.textContent = '注册成功！请查看邮箱确认（或直接尝试登录）';
-        updateAuthUI(); // switch to login mode
-      }
-      // session will be picked up by onAuthStateChange
-    });
-
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        currentUser = session.user;
-        loadEntriesCache().then(() => bootApp());
-      } else {
-        currentUser = null;
-        entriesCache = {};
-        cacheLoaded = false;
-        showAuth();
-      }
-    });
-
-    // ---- data layer (Supabase) ----
+    // ---- data layer ----
     async function loadEntriesCache() {
-      if (!currentUser) return;
       const { data, error } = await supabase
         .from('diary_entries')
-        .select('date, title, content');
+        .select('date, title, content')
+        .eq('device_id', deviceId);
       if (error) { console.error('load error:', error); return; }
       entriesCache = {};
       for (const row of (data || [])) {
         entriesCache[row.date] = { title: row.title || '', content: row.content || '' };
       }
-      cacheLoaded = true;
     }
 
     async function saveEntry(dateKey, title, content) {
-      if (!currentUser) return;
-      const trimmedTitle = title.trim();
-      const trimmedContent = content;
-
-      if (trimmedTitle === '' && trimmedContent === '') {
-        // delete
+      const t = title.trim();
+      const c = content;
+      if (t === '' && c === '') {
         const { error } = await supabase
           .from('diary_entries')
           .delete()
+          .eq('device_id', deviceId)
           .eq('date', dateKey);
         if (error) { console.error('delete error:', error); return; }
         delete entriesCache[dateKey];
       } else {
-        // upsert
         const { error } = await supabase
           .from('diary_entries')
-          .upsert({ date: dateKey, title: trimmedTitle, content: trimmedContent }, { onConflict: 'date' });
+          .upsert({ device_id: deviceId, date: dateKey, title: t, content: c }, { onConflict: 'device_id, date' });
         if (error) { console.error('upsert error:', error); return; }
-        entriesCache[dateKey] = { title: trimmedTitle, content: trimmedContent };
+        entriesCache[dateKey] = { title: t, content: c };
       }
     }
 
@@ -639,25 +360,6 @@
     }
 
     // ---- view switching ----
-    function showAuth() {
-      loadingView.style.display = 'none';
-      authView.style.display = '';
-      calendarView.classList.add('hidden-right');
-      pickerView.classList.add('hidden-right');
-      yearPickerView.classList.add('hidden-right');
-      diaryView.classList.add('hidden-right', 'hidden-left');
-    }
-
-    function bootApp() {
-      loadingView.style.display = 'none';
-      authView.style.display = 'none';
-      const now = new Date();
-      currentYear  = now.getFullYear();
-      currentMonth = now.getMonth();
-      const todayKey = fmtDate(now.getFullYear(), now.getMonth(), now.getDate());
-      openDiary(todayKey);
-    }
-
     function goToCalendar() {
       const now = new Date();
       currentYear  = now.getFullYear();
@@ -677,13 +379,11 @@
       contentInput.value = entry.content;
       const [y, m, d] = dateKey.split('-');
       diaryDateLabel.textContent = `${y}年${m}月${d}日`;
-
       calendarView.classList.add('hidden-left');
       calendarView.classList.remove('hidden-right');
       pickerView.classList.add('hidden-right');
       yearPickerView.classList.add('hidden-right');
       diaryView.classList.remove('hidden-left', 'hidden-right');
-
       saveHint.textContent = '已自动保存';
       saveHint.classList.remove('saved');
       setTimeout(() => titleInput.focus(), 350);
@@ -722,7 +422,6 @@
       const firstDay = new Date(currentYear, currentMonth, 1).getDay();
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
-
       let html = '';
       for (let i = firstDay - 1; i >= 0; i--) {
         html += `<div class="day-cell other-month">${daysInPrev - i}</div>`;
@@ -740,10 +439,8 @@
         html += `<div class="day-cell other-month">${d}</div>`;
       }
       dayGrid.innerHTML = html;
-
       const n = countEntries();
       entryCount.textContent = n ? `${n} 篇日记` : '';
-
       dayGrid.querySelectorAll('.day-cell:not(.other-month)').forEach(cell => {
         cell.addEventListener('click', () => openDiary(cell.dataset.date));
       });
@@ -777,7 +474,6 @@
       });
     }
 
-    // ---- year picker ----
     function renderYearPicker() {
       const decadeEnd = decadeStart + 9;
       decadeLabel.textContent = decadeStart + ' - ' + decadeEnd;
@@ -807,7 +503,7 @@
 
     // ---- auto-save ----
     async function autoSave() {
-      if (!selectedDate || !currentUser) return;
+      if (!selectedDate) return;
       await saveEntry(selectedDate, titleInput.value, contentInput.value);
       saveHint.textContent = '已自动保存';
       saveHint.classList.add('saved');
@@ -819,11 +515,6 @@
       saveHint.textContent = '未保存';
       saveHint.classList.remove('saved');
       saveTimer = setTimeout(autoSave, 600);
-    }
-
-    // ---- logout ----
-    async function doLogout() {
-      await supabase.auth.signOut();
     }
 
     // ---- event bindings ----
@@ -852,25 +543,20 @@
     document.getElementById('prevDecadeBtn').addEventListener('click', () => { decadeStart -= 10; renderYearPicker(); });
     document.getElementById('nextDecadeBtn').addEventListener('click', () => { decadeStart += 10; renderYearPicker(); });
 
-    document.getElementById('logoutBtn1').addEventListener('click', doLogout);
-    document.getElementById('logoutBtn2').addEventListener('click', doLogout);
-
     diaryDateLabel.addEventListener('click', goToCalendar);
     titleInput.addEventListener('input', scheduleSave);
     contentInput.addEventListener('input', scheduleSave);
 
-    // swipe gestures
+    // swipe
     let touchStartX = 0;
     diaryView.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
     diaryView.addEventListener('touchend', e => {
       if (e.changedTouches[0].clientX - touchStartX > 80) goToCalendar();
     });
-
     pickerView.addEventListener('touchstart', e => { pickerView._touchX = e.touches[0].clientX; }, { passive: true });
     pickerView.addEventListener('touchend', e => {
       if (e.changedTouches[0].clientX - (pickerView._touchX || 0) > 80) goBackFromPicker();
     });
-
     yearPickerView.addEventListener('touchstart', e => { yearPickerView._touchX = e.touches[0].clientX; }, { passive: true });
     yearPickerView.addEventListener('touchend', e => {
       if (e.changedTouches[0].clientX - (yearPickerView._touchX || 0) > 80) goBackFromYearPicker();
@@ -878,14 +564,13 @@
 
     // ---- init ----
     (async function init() {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        currentUser = data.session.user;
-        await loadEntriesCache();
-        bootApp();
-      } else {
-        showAuth();
-      }
+      await loadEntriesCache();
+      loadingView.style.display = 'none';
+      const now = new Date();
+      currentYear  = now.getFullYear();
+      currentMonth = now.getMonth();
+      const todayKey = fmtDate(now.getFullYear(), now.getMonth(), now.getDate());
+      openDiary(todayKey);
     })();
 
   })();
