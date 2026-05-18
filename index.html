@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>日记</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root {
     --bg: #faf9f6;
@@ -526,17 +526,28 @@
       e.preventDefault();
       const email = authEmail.value.trim();
       const password = authPassword.value;
-      if (!email || !password) return;
+      if (!email || !password) {
+        authError.textContent = '请填写邮箱和密码';
+        return;
+      }
 
-      authError.textContent = '';
+      authError.textContent = '正在连接服务器...';
       authSubmitBtn.textContent = '...';
       authSubmitBtn.disabled = true;
 
       let result;
-      if (isLoginMode) {
-        result = await supabase.auth.signInWithPassword({ email, password });
-      } else {
-        result = await supabase.auth.signUp({ email, password });
+      try {
+        if (isLoginMode) {
+          result = await supabase.auth.signInWithPassword({ email, password });
+        } else {
+          result = await supabase.auth.signUp({ email, password });
+        }
+      } catch (err) {
+        authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
+        authSubmitBtn.disabled = false;
+        authError.textContent = '网络连接失败，请检查网络后重试';
+        console.error('Auth error:', err);
+        return;
       }
 
       authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
@@ -544,14 +555,19 @@
 
       if (result.error) {
         authError.textContent = result.error.message;
+        console.error('Auth result error:', result.error);
         return;
       }
 
       if (!isLoginMode) {
-        authError.textContent = '注册成功！请查看邮箱确认（或直接尝试登录）';
-        updateAuthUI(); // switch to login mode
+        // 注册成功 — 检查是否需要邮箱确认
+        if (result.data?.user && !result.data?.session) {
+          authError.textContent = '注册成功！但需要邮箱确认。请在 Supabase 后台关闭邮箱确认后再试。';
+        } else {
+          authError.textContent = '注册成功！正在进入...';
+        }
       }
-      // session will be picked up by onAuthStateChange
+      // session 会触发 onAuthStateChange
     });
 
     supabase.auth.onAuthStateChange((event, session) => {
