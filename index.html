@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>日记</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- 零外部依赖，直连 Supabase REST API -->
 <style>
   :root {
     --bg: #faf9f6;
@@ -466,156 +466,124 @@
 <script>
   (function() {
 
-    // ═══════════════════════════════════════
-    // CONFIG — 填入你的 Supabase 信息
-    // ═══════════════════════════════════════
     const SUPABASE_URL = 'https://prijzbrbpacddwojjjqj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaWp6YnJicGFjZGR3b2pqanFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTQ2MzIsImV4cCI6MjA5NDY5MDYzMn0.LioKv6pJJ6dRLMm7IHw3kUSZSIsp9JC1Md1-vNW5HgQ';
 
-    // ---- supabase client ----
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     // ---- state ----
-    let currentUser = null;
+    let currentUser = null;      // { id, email }
+    let accessToken = null;
     let isLoginMode = true;
     let currentYear, currentMonth;
     let pickerYear, decadeStart;
     let selectedDate = null;
     let saveTimer = null;
-    let entriesCache = {};      // dateKey → {title, content}
-    let cacheLoaded = false;
+    let entriesCache = {};
 
-    // ---- DOM ----
-    const loadingView     = document.getElementById('loadingView');
-    const authView        = document.getElementById('authView');
-    const calendarView    = document.getElementById('calendarView');
-    const pickerView      = document.getElementById('pickerView');
-    const yearPickerView  = document.getElementById('yearPickerView');
-    const diaryView       = document.getElementById('diaryView');
-    const monthLabel      = document.getElementById('monthLabel');
-    const dayGrid         = document.getElementById('dayGrid');
-    const entryCount      = document.getElementById('entryCount');
-    const diaryDateLabel  = document.getElementById('diaryDateLabel');
-    const titleInput      = document.getElementById('titleInput');
-    const contentInput    = document.getElementById('contentInput');
-    const saveHint        = document.getElementById('saveHint');
-    const pickerYearLabel = document.getElementById('pickerYearLabel');
-    const monthGrid       = document.getElementById('monthGrid');
-    const yearGrid        = document.getElementById('yearGrid');
-    const decadeLabel     = document.getElementById('decadeLabel');
-    const authEmail       = document.getElementById('authEmail');
-    const authPassword    = document.getElementById('authPassword');
-    const authError       = document.getElementById('authError');
-    const authSubmitBtn   = document.getElementById('authSubmitBtn');
-    const authToggleBtn   = document.getElementById('authToggleBtn');
-    const authForm        = document.getElementById('authForm');
-
-    const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-
-    // ---- auth ----
-    function updateAuthUI() {
-      isLoginMode = !isLoginMode;
-      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
-      authToggleBtn.textContent = isLoginMode ? '还没有账号？点击注册' : '已有账号？去登录';
-      authError.textContent = '';
+    // ---- api helpers ----
+    function apiHeaders() {
+      const h = { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' };
+      if (accessToken) h['Authorization'] = 'Bearer ' + accessToken;
+      return h;
     }
 
-    authToggleBtn.addEventListener('click', updateAuthUI);
-
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = authEmail.value.trim();
-      const password = authPassword.value;
-      if (!email || !password) {
-        authError.textContent = '请填写邮箱和密码';
-        return;
+    async function apiFetch(path, opts = {}) {
+      const res = await fetch(SUPABASE_URL + path, opts);
+      if (!res.ok) {
+        const body = await res.text();
+        let msg = body;
+        try { msg = JSON.parse(body).message || body; } catch(_) {}
+        throw new Error(msg);
       }
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    }
 
-      authError.textContent = '正在连接服务器...';
-      authSubmitBtn.textContent = '...';
-      authSubmitBtn.disabled = true;
+    // ---- auth via REST API ----
+    async function signUp(email, password) {
+      return apiFetch('/auth/v1/signup', {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ email, password })
+      });
+    }
 
-      let result;
+    async function signIn(email, password) {
+      return apiFetch('/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ email, password })
+      });
+    }
+
+    async function getUser() {
+      return apiFetch('/auth/v1/user', {
+        method: 'GET',
+        headers: apiHeaders()
+      });
+    }
+
+    async function signOut() {
+      await apiFetch('/auth/v1/logout', {
+        method: 'POST',
+        headers: apiHeaders()
+      }).catch(() => {});
+    }
+
+    // persist session
+    function saveSession(token, user) {
+      accessToken = token;
+      currentUser = user;
+      localStorage.setItem('diary_session', JSON.stringify({ token, user }));
+    }
+
+    function loadSession() {
       try {
-        if (isLoginMode) {
-          result = await supabase.auth.signInWithPassword({ email, password });
-        } else {
-          result = await supabase.auth.signUp({ email, password });
+        const s = JSON.parse(localStorage.getItem('diary_session'));
+        if (s && s.token && s.user) {
+          accessToken = s.token;
+          currentUser = s.user;
+          return true;
         }
-      } catch (err) {
-        authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
-        authSubmitBtn.disabled = false;
-        authError.textContent = '网络连接失败，请检查网络后重试';
-        console.error('Auth error:', err);
-        return;
-      }
+      } catch(_) {}
+      return false;
+    }
 
-      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
-      authSubmitBtn.disabled = false;
+    function clearSession() {
+      accessToken = null;
+      currentUser = null;
+      localStorage.removeItem('diary_session');
+    }
 
-      if (result.error) {
-        authError.textContent = result.error.message;
-        console.error('Auth result error:', result.error);
-        return;
-      }
-
-      if (!isLoginMode) {
-        // 注册成功 — 检查是否需要邮箱确认
-        if (result.data?.user && !result.data?.session) {
-          authError.textContent = '注册成功！但需要邮箱确认。请在 Supabase 后台关闭邮箱确认后再试。';
-        } else {
-          authError.textContent = '注册成功！正在进入...';
-        }
-      }
-      // session 会触发 onAuthStateChange
-    });
-
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        currentUser = session.user;
-        loadEntriesCache().then(() => bootApp());
-      } else {
-        currentUser = null;
-        entriesCache = {};
-        cacheLoaded = false;
-        showAuth();
-      }
-    });
-
-    // ---- data layer (Supabase) ----
+    // ---- data layer ----
     async function loadEntriesCache() {
-      if (!currentUser) return;
-      const { data, error } = await supabase
-        .from('diary_entries')
-        .select('date, title, content');
-      if (error) { console.error('load error:', error); return; }
+      const rows = await apiFetch('/rest/v1/diary_entries?select=date,title,content', {
+        method: 'GET',
+        headers: apiHeaders()
+      });
       entriesCache = {};
-      for (const row of (data || [])) {
+      for (const row of (rows || [])) {
         entriesCache[row.date] = { title: row.title || '', content: row.content || '' };
       }
-      cacheLoaded = true;
     }
 
     async function saveEntry(dateKey, title, content) {
-      if (!currentUser) return;
-      const trimmedTitle = title.trim();
-      const trimmedContent = content;
+      const t = title.trim();
+      const c = content;
 
-      if (trimmedTitle === '' && trimmedContent === '') {
-        // delete
-        const { error } = await supabase
-          .from('diary_entries')
-          .delete()
-          .eq('date', dateKey);
-        if (error) { console.error('delete error:', error); return; }
+      if (t === '' && c === '') {
+        await apiFetch('/rest/v1/diary_entries?date=eq.' + encodeURIComponent(dateKey), {
+          method: 'DELETE',
+          headers: apiHeaders()
+        });
         delete entriesCache[dateKey];
       } else {
-        // upsert
-        const { error } = await supabase
-          .from('diary_entries')
-          .upsert({ date: dateKey, title: trimmedTitle, content: trimmedContent }, { onConflict: 'date' });
-        if (error) { console.error('upsert error:', error); return; }
-        entriesCache[dateKey] = { title: trimmedTitle, content: trimmedContent };
+        // upsert via POST with Prefer: resolution=merge-duplicates
+        await apiFetch('/rest/v1/diary_entries', {
+          method: 'POST',
+          headers: { ...apiHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ date: dateKey, title: t, content: c })
+        });
+        entriesCache[dateKey] = { title: t, content: c };
       }
     }
 
@@ -652,6 +620,91 @@
 
     function fmtDate(y, m, d) {
       return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
+
+    // ---- DOM ----
+    const loadingView     = document.getElementById('loadingView');
+    const authView        = document.getElementById('authView');
+    const calendarView    = document.getElementById('calendarView');
+    const pickerView      = document.getElementById('pickerView');
+    const yearPickerView  = document.getElementById('yearPickerView');
+    const diaryView       = document.getElementById('diaryView');
+    const monthLabel      = document.getElementById('monthLabel');
+    const dayGrid         = document.getElementById('dayGrid');
+    const entryCount      = document.getElementById('entryCount');
+    const diaryDateLabel  = document.getElementById('diaryDateLabel');
+    const titleInput      = document.getElementById('titleInput');
+    const contentInput    = document.getElementById('contentInput');
+    const saveHint        = document.getElementById('saveHint');
+    const pickerYearLabel = document.getElementById('pickerYearLabel');
+    const monthGrid       = document.getElementById('monthGrid');
+    const yearGrid        = document.getElementById('yearGrid');
+    const decadeLabel     = document.getElementById('decadeLabel');
+    const authEmail       = document.getElementById('authEmail');
+    const authPassword    = document.getElementById('authPassword');
+    const authError       = document.getElementById('authError');
+    const authSubmitBtn   = document.getElementById('authSubmitBtn');
+    const authToggleBtn   = document.getElementById('authToggleBtn');
+    const authForm        = document.getElementById('authForm');
+
+    const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+    // ---- auth UI ----
+    function updateAuthUI() {
+      isLoginMode = !isLoginMode;
+      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
+      authToggleBtn.textContent = isLoginMode ? '还没有账号？点击注册' : '已有账号？去登录';
+      authError.textContent = '';
+    }
+
+    authToggleBtn.addEventListener('click', updateAuthUI);
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      if (!email || !password) {
+        authError.textContent = '请填写邮箱和密码';
+        return;
+      }
+
+      authError.textContent = '正在连接服务器...';
+      authSubmitBtn.textContent = '...';
+      authSubmitBtn.disabled = true;
+
+      try {
+        if (isLoginMode) {
+          const data = await signIn(email, password);
+          await onLoginSuccess(data);
+        } else {
+          await signUp(email, password);
+          authSubmitBtn.textContent = '注册';
+          authSubmitBtn.disabled = false;
+          authError.textContent = '注册成功！请重新点击「登录」按钮进行登录。';
+          updateAuthUI();
+          return;
+        }
+      } catch (err) {
+        authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
+        authSubmitBtn.disabled = false;
+        authError.textContent = err.message || '网络连接失败，请重试';
+        console.error('Auth error:', err);
+      }
+    });
+
+    async function onLoginSuccess(data) {
+      const user = data.user;
+      const token = data.access_token;
+      saveSession(token, user);
+      await loadEntriesCache();
+      bootApp();
+    }
+
+    async function doLogout() {
+      await signOut();
+      clearSession();
+      entriesCache = {};
+      showAuth();
     }
 
     // ---- view switching ----
@@ -693,13 +746,11 @@
       contentInput.value = entry.content;
       const [y, m, d] = dateKey.split('-');
       diaryDateLabel.textContent = `${y}年${m}月${d}日`;
-
       calendarView.classList.add('hidden-left');
       calendarView.classList.remove('hidden-right');
       pickerView.classList.add('hidden-right');
       yearPickerView.classList.add('hidden-right');
       diaryView.classList.remove('hidden-left', 'hidden-right');
-
       saveHint.textContent = '已自动保存';
       saveHint.classList.remove('saved');
       setTimeout(() => titleInput.focus(), 350);
@@ -738,7 +789,6 @@
       const firstDay = new Date(currentYear, currentMonth, 1).getDay();
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
-
       let html = '';
       for (let i = firstDay - 1; i >= 0; i--) {
         html += `<div class="day-cell other-month">${daysInPrev - i}</div>`;
@@ -756,10 +806,8 @@
         html += `<div class="day-cell other-month">${d}</div>`;
       }
       dayGrid.innerHTML = html;
-
       const n = countEntries();
       entryCount.textContent = n ? `${n} 篇日记` : '';
-
       dayGrid.querySelectorAll('.day-cell:not(.other-month)').forEach(cell => {
         cell.addEventListener('click', () => openDiary(cell.dataset.date));
       });
@@ -793,7 +841,6 @@
       });
     }
 
-    // ---- year picker ----
     function renderYearPicker() {
       const decadeEnd = decadeStart + 9;
       decadeLabel.textContent = decadeStart + ' - ' + decadeEnd;
@@ -835,11 +882,6 @@
       saveHint.textContent = '未保存';
       saveHint.classList.remove('saved');
       saveTimer = setTimeout(autoSave, 600);
-    }
-
-    // ---- logout ----
-    async function doLogout() {
-      await supabase.auth.signOut();
     }
 
     // ---- event bindings ----
@@ -894,14 +936,19 @@
 
     // ---- init ----
     (async function init() {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        currentUser = data.session.user;
-        await loadEntriesCache();
-        bootApp();
-      } else {
-        showAuth();
+      if (loadSession()) {
+        try {
+          // verify token is still valid
+          await getUser();
+          await loadEntriesCache();
+          bootApp();
+          return;
+        } catch(e) {
+          // token expired
+          clearSession();
+        }
       }
+      showAuth();
     })();
 
   })();
