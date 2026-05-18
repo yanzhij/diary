@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>日记</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --card: #ffffff;
+    --text: #2c2c2c;
+    --text-secondary: #999;
+    --border: #ebebeb;
+    --accent: #5b7fff;
+    --accent-light: #eef1ff;
+    --accent-soft: #f5f6ff;
+    --dot: #ff6b6b;
+    --shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---- view switching ---- */
+  .view {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    min-height: 100vh;
+    padding: 20px 20px 40px;
+    transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  }
+  .view.hidden-left  { transform: translateX(-60px); opacity: 0; pointer-events: none; }
+  .view.hidden-right { transform: translateX(60px);  opacity: 0; pointer-events: none; }
+
+  /* ======== Auth View ======== */
+  .auth-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    gap: 24px;
+  }
+  .auth-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+  }
+  .auth-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .auth-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-input::placeholder { color: #ccc; }
+
+  .auth-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+    transition: opacity .15s;
+  }
+  .auth-btn:active { opacity: .8; }
+  .auth-btn.secondary {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .auth-error {
+    font-size: 14px;
+    color: #ff4d4f;
+    text-align: center;
+    min-height: 20px;
+  }
+  .auth-hint {
+    font-size: 12px;
+    color: #ccc;
+    text-align: center;
+  }
+
+  /* ---- logout button ---- */
+  .logout-btn {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    z-index: 100;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-secondary);
+    box-shadow: var(--shadow);
+    transition: background .15s;
+  }
+  .logout-btn:active { background: #f0f0f0; }
+
+  /* ---- calendar header ---- */
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding: 8px 0;
+  }
+  .month-label {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 10px;
+    transition: background .15s;
+  }
+  .month-label:active { background: var(--accent-light); }
+  .nav-btn {
+    width: 40px; height: 40px;
+    border: none; background: var(--card);
+    border-radius: 50%;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transition: background .15s;
+  }
+  .nav-btn:active { background: #f0f0f0; }
+
+  /* ---- weekday row ---- */
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  /* ---- day grid ---- */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    font-size: 15px;
+    cursor: pointer;
+    position: relative;
+    transition: background .15s;
+    font-weight: 450;
+  }
+  .day-cell:active { background: var(--accent-light); }
+  .day-cell.other-month { color: #d0d0d0; pointer-events: none; }
+  .day-cell.today { font-weight: 700; color: var(--accent); }
+  .day-cell.today::after {
+    content: '';
+    position: absolute; bottom: 6px;
+    width: 5px; height: 5px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .day-cell.has-entry::before {
+    content: '';
+    position: absolute; top: 5px;
+    width: 5px; height: 5px;
+    border-radius: 50%; background: var(--dot);
+  }
+
+  /* ---- diary view ---- */
+  .diary-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 8px 0;
+  }
+  .diary-date {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    cursor: pointer;
+    padding: 4px 0;
+    flex: 1;
+    transition: opacity .15s;
+  }
+  .diary-date:active { opacity: .5; }
+
+  .diary-editor { display: flex; flex-direction: column; gap: 16px; }
+  .diary-title-input {
+    width: 100%;
+    border: none;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    letter-spacing: -.3px;
+  }
+  .diary-title-input::placeholder { color: #ccc; }
+  .diary-content-input {
+    width: 100%;
+    flex: 1;
+    min-height: 300px;
+    border: none;
+    font-size: 16px;
+    font-family: inherit;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    resize: none;
+    line-height: 1.8;
+  }
+  .diary-content-input::placeholder { color: #d5d5d5; }
+
+  .save-hint {
+    font-size: 12px;
+    color: #ccc;
+    text-align: right;
+    margin-top: 8px;
+    transition: color .3s;
+  }
+  .save-hint.saved { color: var(--accent); }
+
+  .today-btn {
+    display: block;
+    margin: 20px auto 0;
+    padding: 10px 28px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transition: background .15s;
+  }
+  .today-btn:active { background: #f0f0f0; }
+
+  .entry-count {
+    text-align: center;
+    font-size: 12px;
+    color: #ccc;
+    margin-top: 12px;
+  }
+
+  /* ======== Picker View ======== */
+  .picker-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 8px 0;
+  }
+  .picker-year-label {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    flex: 1; text-align: center;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 10px;
+    transition: background .15s;
+  }
+  .picker-year-label:active { background: var(--accent-light); }
+
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px; padding: 0 4px;
+  }
+  .month-card {
+    aspect-ratio: 1.4;
+    background: var(--card);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    color: var(--text);
+    border: 2px solid transparent;
+  }
+  .month-card:active { background: var(--accent-soft); transform: scale(.97); }
+  .month-card.current { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; color: var(--accent); }
+  .month-card .month-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--dot); opacity: 0; transition: opacity .2s; }
+  .month-card.has-entries .month-dot { opacity: 1; }
+  .month-card .month-count { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+  /* ======== Year Picker View ======== */
+  .year-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 8px 0;
+  }
+  .year-picker-decade-label {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    flex: 1; text-align: center;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 10px;
+    transition: background .15s;
+  }
+  .year-picker-decade-label:active { background: var(--accent-light); }
+
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px; padding: 0 4px;
+  }
+  .year-card {
+    aspect-ratio: 1;
+    background: var(--card);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 16px; font-weight: 500;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    color: var(--text);
+    border: 2px solid transparent;
+  }
+  .year-card:active { background: var(--accent-soft); transform: scale(.97); }
+  .year-card.current { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; color: var(--accent); }
+  .year-card .year-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--dot); opacity: 0; transition: opacity .2s; }
+  .year-card.has-entries .year-dot { opacity: 1; }
+  .year-card .year-count { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+  /* ---- loading ---- */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; font-size: 16px; color: #ccc;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ======== Loading ======== -->
+  <div class="loading" id="loadingView">加载中...</div>
+
+  <!-- ======== Auth View ======== -->
+  <div class="view" id="authView" style="display:none">
+    <div class="auth-wrapper">
+      <div class="auth-title">📔 日记</div>
+      <div class="auth-form" id="authForm">
+        <input class="auth-input" id="authEmail" type="email" placeholder="邮箱" autocomplete="email">
+        <input class="auth-input" id="authPassword" type="password" placeholder="密码（至少6位）" autocomplete="current-password">
+        <div class="auth-error" id="authError"></div>
+        <button class="auth-btn" id="authSubmitBtn">登录</button>
+        <button class="auth-btn secondary" id="authToggleBtn">还没有账号？点击注册</button>
+      </div>
+      <div class="auth-hint">数据云端同步，多设备可用</div>
+    </div>
+  </div>
+
+  <!-- ======== Calendar View ======== -->
+  <div class="view hidden-right" id="calendarView">
+    <button class="logout-btn" id="logoutBtn1">退出</button>
+    <div class="cal-header">
+      <button class="nav-btn" id="prevMonth">&lt;</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button class="nav-btn" id="nextMonth">&gt;</button>
+    </div>
+    <div class="weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="day-grid" id="dayGrid"></div>
+    <button class="today-btn" id="todayBtn">回到今天</button>
+    <div class="entry-count" id="entryCount"></div>
+  </div>
+
+  <!-- ======== Month Picker ======== -->
+  <div class="view hidden-right" id="pickerView">
+    <div class="picker-header">
+      <button class="nav-btn" id="pickerPrevYear">&lt;</button>
+      <span class="picker-year-label" id="pickerYearLabel"></span>
+      <button class="nav-btn" id="pickerNextYear">&gt;</button>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+
+  <!-- ======== Year Picker ======== -->
+  <div class="view hidden-right" id="yearPickerView">
+    <div class="year-picker-header">
+      <button class="nav-btn" id="prevDecadeBtn">&lt;</button>
+      <span class="year-picker-decade-label" id="decadeLabel"></span>
+      <button class="nav-btn" id="nextDecadeBtn">&gt;</button>
+    </div>
+    <div class="year-grid" id="yearGrid"></div>
+  </div>
+
+  <!-- ======== Diary View ======== -->
+  <div class="view hidden-right" id="diaryView">
+    <button class="logout-btn" id="logoutBtn2">退出</button>
+    <div class="diary-header">
+      <span class="diary-date" id="diaryDateLabel"></span>
+    </div>
+    <div class="diary-editor">
+      <input class="diary-title-input" id="titleInput" placeholder="标题">
+      <textarea class="diary-content-input" id="contentInput" placeholder="今天发生了什么..."></textarea>
+    </div>
+    <div class="save-hint" id="saveHint">已自动保存</div>
+  </div>
+
+</div>
+
+<script>
+  (function() {
+
+    // ═══════════════════════════════════════
+    // CONFIG — 填入你的 Supabase 信息
+    // ═══════════════════════════════════════
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+    // ---- supabase client ----
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ---- state ----
+    let currentUser = null;
+    let isLoginMode = true;
+    let currentYear, currentMonth;
+    let pickerYear, decadeStart;
+    let selectedDate = null;
+    let saveTimer = null;
+    let entriesCache = {};      // dateKey → {title, content}
+    let cacheLoaded = false;
+
+    // ---- DOM ----
+    const loadingView     = document.getElementById('loadingView');
+    const authView        = document.getElementById('authView');
+    const calendarView    = document.getElementById('calendarView');
+    const pickerView      = document.getElementById('pickerView');
+    const yearPickerView  = document.getElementById('yearPickerView');
+    const diaryView       = document.getElementById('diaryView');
+    const monthLabel      = document.getElementById('monthLabel');
+    const dayGrid         = document.getElementById('dayGrid');
+    const entryCount      = document.getElementById('entryCount');
+    const diaryDateLabel  = document.getElementById('diaryDateLabel');
+    const titleInput      = document.getElementById('titleInput');
+    const contentInput    = document.getElementById('contentInput');
+    const saveHint        = document.getElementById('saveHint');
+    const pickerYearLabel = document.getElementById('pickerYearLabel');
+    const monthGrid       = document.getElementById('monthGrid');
+    const yearGrid        = document.getElementById('yearGrid');
+    const decadeLabel     = document.getElementById('decadeLabel');
+    const authEmail       = document.getElementById('authEmail');
+    const authPassword    = document.getElementById('authPassword');
+    const authError       = document.getElementById('authError');
+    const authSubmitBtn   = document.getElementById('authSubmitBtn');
+    const authToggleBtn   = document.getElementById('authToggleBtn');
+    const authForm        = document.getElementById('authForm');
+
+    const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+    // ---- auth ----
+    function updateAuthUI() {
+      isLoginMode = !isLoginMode;
+      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
+      authToggleBtn.textContent = isLoginMode ? '还没有账号？点击注册' : '已有账号？去登录';
+      authError.textContent = '';
+    }
+
+    authToggleBtn.addEventListener('click', updateAuthUI);
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      if (!email || !password) return;
+
+      authError.textContent = '';
+      authSubmitBtn.textContent = '...';
+      authSubmitBtn.disabled = true;
+
+      let result;
+      if (isLoginMode) {
+        result = await supabase.auth.signInWithPassword({ email, password });
+      } else {
+        result = await supabase.auth.signUp({ email, password });
+      }
+
+      authSubmitBtn.textContent = isLoginMode ? '登录' : '注册';
+      authSubmitBtn.disabled = false;
+
+      if (result.error) {
+        authError.textContent = result.error.message;
+        return;
+      }
+
+      if (!isLoginMode) {
+        authError.textContent = '注册成功！请查看邮箱确认（或直接尝试登录）';
+        updateAuthUI(); // switch to login mode
+      }
+      // session will be picked up by onAuthStateChange
+    });
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        currentUser = session.user;
+        loadEntriesCache().then(() => bootApp());
+      } else {
+        currentUser = null;
+        entriesCache = {};
+        cacheLoaded = false;
+        showAuth();
+      }
+    });
+
+    // ---- data layer (Supabase) ----
+    async function loadEntriesCache() {
+      if (!currentUser) return;
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('date, title, content');
+      if (error) { console.error('load error:', error); return; }
+      entriesCache = {};
+      for (const row of (data || [])) {
+        entriesCache[row.date] = { title: row.title || '', content: row.content || '' };
+      }
+      cacheLoaded = true;
+    }
+
+    async function saveEntry(dateKey, title, content) {
+      if (!currentUser) return;
+      const trimmedTitle = title.trim();
+      const trimmedContent = content;
+
+      if (trimmedTitle === '' && trimmedContent === '') {
+        // delete
+        const { error } = await supabase
+          .from('diary_entries')
+          .delete()
+          .eq('date', dateKey);
+        if (error) { console.error('delete error:', error); return; }
+        delete entriesCache[dateKey];
+      } else {
+        // upsert
+        const { error } = await supabase
+          .from('diary_entries')
+          .upsert({ date: dateKey, title: trimmedTitle, content: trimmedContent }, { onConflict: 'date' });
+        if (error) { console.error('upsert error:', error); return; }
+        entriesCache[dateKey] = { title: trimmedTitle, content: trimmedContent };
+      }
+    }
+
+    function getEntry(dateKey) {
+      return entriesCache[dateKey] || { title: '', content: '' };
+    }
+
+    function hasEntry(dateKey) {
+      const e = entriesCache[dateKey];
+      return e && (e.title.trim() || e.content.trim());
+    }
+
+    function countEntries() {
+      return Object.keys(entriesCache).length;
+    }
+
+    function countMonthEntries(year, month) {
+      const prefix = year + '-' + String(month + 1).padStart(2, '0') + '-';
+      let count = 0;
+      for (const key of Object.keys(entriesCache)) {
+        if (key.startsWith(prefix)) count++;
+      }
+      return count;
+    }
+
+    function countYearEntries(year) {
+      const prefix = year + '-';
+      let count = 0;
+      for (const key of Object.keys(entriesCache)) {
+        if (key.startsWith(prefix)) count++;
+      }
+      return count;
+    }
+
+    function fmtDate(y, m, d) {
+      return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
+
+    // ---- view switching ----
+    function showAuth() {
+      loadingView.style.display = 'none';
+      authView.style.display = '';
+      calendarView.classList.add('hidden-right');
+      pickerView.classList.add('hidden-right');
+      yearPickerView.classList.add('hidden-right');
+      diaryView.classList.add('hidden-right', 'hidden-left');
+    }
+
+    function bootApp() {
+      loadingView.style.display = 'none';
+      authView.style.display = 'none';
+      const now = new Date();
+      currentYear  = now.getFullYear();
+      currentMonth = now.getMonth();
+      const todayKey = fmtDate(now.getFullYear(), now.getMonth(), now.getDate());
+      openDiary(todayKey);
+    }
+
+    function goToCalendar() {
+      const now = new Date();
+      currentYear  = now.getFullYear();
+      currentMonth = now.getMonth();
+      diaryView.classList.add('hidden-left');
+      diaryView.classList.remove('hidden-right');
+      calendarView.classList.remove('hidden-left', 'hidden-right');
+      pickerView.classList.add('hidden-right');
+      yearPickerView.classList.add('hidden-right');
+      renderCalendar();
+    }
+
+    function openDiary(dateKey) {
+      selectedDate = dateKey;
+      const entry = getEntry(dateKey);
+      titleInput.value = entry.title;
+      contentInput.value = entry.content;
+      const [y, m, d] = dateKey.split('-');
+      diaryDateLabel.textContent = `${y}年${m}月${d}日`;
+
+      calendarView.classList.add('hidden-left');
+      calendarView.classList.remove('hidden-right');
+      pickerView.classList.add('hidden-right');
+      yearPickerView.classList.add('hidden-right');
+      diaryView.classList.remove('hidden-left', 'hidden-right');
+
+      saveHint.textContent = '已自动保存';
+      saveHint.classList.remove('saved');
+      setTimeout(() => titleInput.focus(), 350);
+    }
+
+    function openPicker() {
+      pickerYear = currentYear;
+      renderPicker();
+      calendarView.classList.add('hidden-left');
+      pickerView.classList.remove('hidden-right', 'hidden-left');
+    }
+
+    function goBackFromPicker() {
+      pickerView.classList.add('hidden-right');
+      calendarView.classList.remove('hidden-left', 'hidden-right');
+      renderCalendar();
+    }
+
+    function openYearPicker() {
+      decadeStart = Math.floor(pickerYear / 10) * 10;
+      renderYearPicker();
+      pickerView.classList.add('hidden-left');
+      yearPickerView.classList.remove('hidden-right');
+    }
+
+    function goBackFromYearPicker() {
+      yearPickerView.classList.add('hidden-right');
+      pickerView.classList.remove('hidden-left');
+    }
+
+    // ---- calendar ----
+    function renderCalendar() {
+      monthLabel.textContent = currentYear + '年 ' + (currentMonth + 1) + '月';
+      const today = new Date();
+      const todayKey = fmtDate(today.getFullYear(), today.getMonth(), today.getDate());
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
+
+      let html = '';
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="day-cell other-month">${daysInPrev - i}</div>`;
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = fmtDate(currentYear, currentMonth, d);
+        const cls = ['day-cell'];
+        if (key === todayKey) cls.push('today');
+        if (hasEntry(key)) cls.push('has-entry');
+        html += `<div class="${cls.join(' ')}" data-date="${key}">${d}</div>`;
+      }
+      const totalCells = firstDay + daysInMonth;
+      const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let d = 1; d <= remaining; d++) {
+        html += `<div class="day-cell other-month">${d}</div>`;
+      }
+      dayGrid.innerHTML = html;
+
+      const n = countEntries();
+      entryCount.textContent = n ? `${n} 篇日记` : '';
+
+      dayGrid.querySelectorAll('.day-cell:not(.other-month)').forEach(cell => {
+        cell.addEventListener('click', () => openDiary(cell.dataset.date));
+      });
+    }
+
+    // ---- picker ----
+    function renderPicker() {
+      pickerYearLabel.textContent = pickerYear + '年';
+      const now = new Date();
+      const thisYear = now.getFullYear();
+      const thisMonth = now.getMonth();
+      let html = '';
+      for (let m = 0; m < 12; m++) {
+        const cls = ['month-card'];
+        if (pickerYear === thisYear && m === thisMonth) cls.push('current');
+        const n = countMonthEntries(pickerYear, m);
+        if (n > 0) cls.push('has-entries');
+        html += `<div class="${cls.join(' ')}" data-month="${m}">
+          <span>${MONTHS[m]}</span>
+          <span class="month-count">${n ? n + '篇' : ''}</span>
+          <span class="month-dot"></span>
+        </div>`;
+      }
+      monthGrid.innerHTML = html;
+      monthGrid.querySelectorAll('.month-card').forEach(card => {
+        card.addEventListener('click', () => {
+          currentYear = pickerYear;
+          currentMonth = parseInt(card.dataset.month);
+          goBackFromPicker();
+        });
+      });
+    }
+
+    // ---- year picker ----
+    function renderYearPicker() {
+      const decadeEnd = decadeStart + 9;
+      decadeLabel.textContent = decadeStart + ' - ' + decadeEnd;
+      const now = new Date();
+      const thisYear = now.getFullYear();
+      let html = '';
+      for (let y = decadeStart; y <= decadeEnd; y++) {
+        const cls = ['year-card'];
+        if (y === thisYear) cls.push('current');
+        const n = countYearEntries(y);
+        if (n > 0) cls.push('has-entries');
+        html += `<div class="${cls.join(' ')}" data-year="${y}">
+          <span>${y}</span>
+          <span class="year-count">${n ? n + '篇' : ''}</span>
+          <span class="year-dot"></span>
+        </div>`;
+      }
+      yearGrid.innerHTML = html;
+      yearGrid.querySelectorAll('.year-card').forEach(card => {
+        card.addEventListener('click', () => {
+          pickerYear = parseInt(card.dataset.year);
+          renderPicker();
+          goBackFromYearPicker();
+        });
+      });
+    }
+
+    // ---- auto-save ----
+    async function autoSave() {
+      if (!selectedDate || !currentUser) return;
+      await saveEntry(selectedDate, titleInput.value, contentInput.value);
+      saveHint.textContent = '已自动保存';
+      saveHint.classList.add('saved');
+      setTimeout(() => saveHint.classList.remove('saved'), 1200);
+    }
+
+    function scheduleSave() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveHint.textContent = '未保存';
+      saveHint.classList.remove('saved');
+      saveTimer = setTimeout(autoSave, 600);
+    }
+
+    // ---- logout ----
+    async function doLogout() {
+      await supabase.auth.signOut();
+    }
+
+    // ---- event bindings ----
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      renderCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      renderCalendar();
+    });
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      const now = new Date();
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth();
+      renderCalendar();
+    });
+    monthLabel.addEventListener('click', openPicker);
+    pickerYearLabel.addEventListener('click', openYearPicker);
+    decadeLabel.addEventListener('click', goBackFromYearPicker);
+
+    document.getElementById('pickerPrevYear').addEventListener('click', () => { pickerYear--; renderPicker(); });
+    document.getElementById('pickerNextYear').addEventListener('click', () => { pickerYear++; renderPicker(); });
+    document.getElementById('prevDecadeBtn').addEventListener('click', () => { decadeStart -= 10; renderYearPicker(); });
+    document.getElementById('nextDecadeBtn').addEventListener('click', () => { decadeStart += 10; renderYearPicker(); });
+
+    document.getElementById('logoutBtn1').addEventListener('click', doLogout);
+    document.getElementById('logoutBtn2').addEventListener('click', doLogout);
+
+    diaryDateLabel.addEventListener('click', goToCalendar);
+    titleInput.addEventListener('input', scheduleSave);
+    contentInput.addEventListener('input', scheduleSave);
+
+    // swipe gestures
+    let touchStartX = 0;
+    diaryView.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    diaryView.addEventListener('touchend', e => {
+      if (e.changedTouches[0].clientX - touchStartX > 80) goToCalendar();
+    });
+
+    pickerView.addEventListener('touchstart', e => { pickerView._touchX = e.touches[0].clientX; }, { passive: true });
+    pickerView.addEventListener('touchend', e => {
+      if (e.changedTouches[0].clientX - (pickerView._touchX || 0) > 80) goBackFromPicker();
+    });
+
+    yearPickerView.addEventListener('touchstart', e => { yearPickerView._touchX = e.touches[0].clientX; }, { passive: true });
+    yearPickerView.addEventListener('touchend', e => {
+      if (e.changedTouches[0].clientX - (yearPickerView._touchX || 0) > 80) goBackFromYearPicker();
+    });
+
+    // ---- init ----
+    (async function init() {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        currentUser = data.session.user;
+        await loadEntriesCache();
+        bootApp();
+      } else {
+        showAuth();
+      }
+    })();
+
+  })();
+</script>
+</body>
+</html>
